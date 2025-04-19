@@ -1,0 +1,57 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id("maven-publish")
+}
+
+group = 'dev.domkss'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    //Yaml processor for writing reading config files
+    implementation 'org.yaml:snakeyaml:2.0'
+    shadow 'org.yaml:snakeyaml:2.0'
+}
+
+shadowJar {
+    configurations = [project.configurations.shadow]
+    archiveClassifier.set('')
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}
+
+jar.enabled = false
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/domkss/JConfigLib")
+            credentials {
+                username = System.getenv("GithubPackagesRepository_User")
+                password = System.getenv("GithubPackagesRepository_Token")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            artifact shadowJar
+            groupId = project.group.toString()
+            artifactId = 'jconfiglib'
+            version = project.version.toString()
+        }
+    }
+}
