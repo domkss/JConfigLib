@@ -96,7 +96,22 @@ public class ConfigLoader {
         try {
             Field field = configInstance.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
-            field.set(configInstance, value);
+
+            //Cast numbers to the proper type
+            if (value instanceof Number number) {
+                switch (field.getType().getName()) {
+                    case "int", "java.lang.Integer" -> field.set(configInstance, number.intValue());
+                    case "float", "java.lang.Float" -> field.set(configInstance, number.floatValue());
+                    case "double", "java.lang.Double" -> field.set(configInstance, number.doubleValue());
+                    case "long", "java.lang.Long" -> field.set(configInstance, number.longValue());
+                    case "short", "java.lang.Short" -> field.set(configInstance, number.shortValue());
+                    case "byte", "java.lang.Byte" -> field.set(configInstance, number.byteValue());
+                    default -> field.set(configInstance, number); // fallback
+                }
+            } else {
+                field.set(configInstance, value); // Strings, booleans, etc.
+            }
+
         } catch (NoSuchFieldException | IllegalAccessException | IllegalArgumentException e) {
             LOGGER.log(Level.SEVERE,"Error setting field value for " + fieldName);
         }
