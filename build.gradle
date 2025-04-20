@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'dev.domkss'
-version = '1.0.0'
+version = '1.1.0'
 description = 'A Java library that syncs YAML config files with a Config class — auto-generates or updates as needed.'
 
 repositories {
@@ -15,10 +15,17 @@ repositories {
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testAnnotationProcessor sourceSets.main.output
 
     //Yaml processor for writing reading config files
     implementation 'org.yaml:snakeyaml:2.0'
     shadow 'org.yaml:snakeyaml:2.0'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 shadowJar {
@@ -62,6 +69,9 @@ publishing {
             groupId = project.group.toString()
             artifactId = 'jconfiglib'
             version = project.version.toString()
+            pom {
+                properties['java.version'] = '17'
+            }
         }
     }
 }
