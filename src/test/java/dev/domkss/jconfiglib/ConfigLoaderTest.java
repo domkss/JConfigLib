@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfigLoaderTest {
 
-    private static final String TEST_CONFIG_PATH = "test-config.yaml";
-    private static final Logger LOGGER = Logger.getLogger("ConfigLoaderTestLogger");
+    private static final String TEST_CONFIG_PATH = "build/test-config.yaml";
+    private static final Logger LOGGER = Logger.getLogger(ConfigLoaderTest.class.getName());
 
     public static class TestConfig {
         @ConfigField
@@ -37,6 +37,7 @@ public class ConfigLoaderTest {
     }
 
     @BeforeEach
+    @AfterEach
     public void cleanUp() {
         File file = new File(TEST_CONFIG_PATH);
         if (file.exists()) {
