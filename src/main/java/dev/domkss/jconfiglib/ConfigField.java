@@ -4,7 +4,6 @@ import java.lang.annotation.*;
 
 /**
  * The annotated field will be included in the config file with default value if not already present
- * <p>
  * Use the `comment` parameter to add descriptive notes.
  */
 @Documented
