@@ -34,6 +34,15 @@ jar.enabled = false
 
 test {
     useJUnitPlatform()
+    afterTest { desc, result ->
+        println "Test: ${desc.name} [${result.resultType}]"
+    }
+    afterSuite { desc, result ->
+        if (!desc.parent) { // will match the root suite
+            println "RESULT: ${result.resultType}"
+            println "Test summary: ${result.testCount} tests, ${result.successfulTestCount} succeeded, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped"
+        }
+    }
 }
 
 publishing {
