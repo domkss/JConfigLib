@@ -71,6 +71,8 @@ publishing {
             version = project.version.toString()
             pom {
                 properties['java.version'] = '17'
+                description.set(project.description.toString())
+                url.set("https://github.com/domkss/JConfigLib")
             }
         }
     }
