@@ -6,6 +6,7 @@ plugins {
 
 group = 'dev.domkss'
 version = '1.0.0'
+description = 'A Java library that syncs YAML config files with a Config class — auto-generates or updates as needed.'
 
 repositories {
     mavenCentral()
