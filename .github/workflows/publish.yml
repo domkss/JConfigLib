@@ -23,13 +23,12 @@ jobs:
       - name: Check for version bump
         id: version-check
         run: |
-          git fetch origin main --depth=1
-          VERSION_DIFF=$(git diff origin/main HEAD -- build.gradle)
+          git fetch origin main --depth=2
+          git diff HEAD~1 HEAD build.gradle > version_diff.txt
+          echo "Version diff:"
+          cat version_diff.txt
           
-          echo "Version diff output:"
-          echo "$VERSION_DIFF"
-          
-          if echo "$VERSION_DIFF" | grep -E '^[+-]\s*version\s*=\s*"\d+\.\d+\.\d+(-[a-zA-Z0-9\.]+)?"' > /dev/null; then
+          if grep -E "^[+-].*version\s*=\s*['\"]\d+\.\d+\.\d+([-a-zA-Z0-9\.]*)?['\"]" version_diff.txt > /dev/null; then
             echo "version_changed=true" >> $GITHUB_OUTPUT
           else
             echo "version_changed=false" >> $GITHUB_OUTPUT
