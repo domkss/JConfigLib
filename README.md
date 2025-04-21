@@ -20,26 +20,27 @@
 
 ---
 
-## 📦 Installation
+## 📦 Add JConfigLib to your project
 
-Add JConfigLib to your project using your build tool. (Coming soon to Maven Central or JitPack.)
+Add JConfigLib to your project using your build tool.
+
+For Gradle:
 ```groovy
-repositories {
-    maven {
-        url = uri("https://maven.pkg.github.com/domkss/JConfigLib")
-        credentials {
-            // Set this environment variable to your github username
-            username = System.getenv("GithubPackagesRepository_User")
-            // Your personal access token with github packages read access
-            password = System.getenv("GithubPackagesRepository_Token")
-        }
-    }
-}
-
 dependencies {
     // Other Dependencies
-    implementation "dev.domkss:jconfiglib:1.1.0"
+    implementation "dev.domkss:jconfiglib:1.1.2"
 }
+```
+For Maven:
+```xml
+    <dependencies>
+        <!--Other Dependencies-->
+        <dependency>
+            <groupId>dev.domkss</groupId>
+            <artifactId>jconfiglib</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+    </dependencies>
 ```
 
 
