@@ -1,7 +1,8 @@
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id("maven-publish")
+    id 'org.jreleaser' version '1.17.0'
+    id 'maven-publish'
 }
 
 group = 'dev.domkss'
@@ -22,6 +23,8 @@ dependencies {
 }
 
 java {
+    withJavadocJar()
+    withSourcesJar()
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
@@ -44,7 +47,7 @@ test {
         println "Test: ${desc.name} [${result.resultType}]"
     }
     afterSuite { desc, result ->
-        if (!desc.parent) { // will match the root suite
+        if (!desc.parent) {
             println "RESULT: ${result.resultType}"
             println "Test summary: ${result.testCount} tests, ${result.successfulTestCount} succeeded, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped"
         }
@@ -52,51 +55,74 @@ test {
 }
 
 publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/domkss/JConfigLib")
-            credentials {
-                username = System.getenv("GithubPackagesRepository_User")
-                password = System.getenv("GithubPackagesRepository_Token")
+publications {
+    maven(MavenPublication) {
+        artifact(tasks.named("shadowJar"))
+        artifact(tasks.named("sourcesJar"))
+        artifact(tasks.named("javadocJar"))
+
+        groupId = project.group.toString()
+        artifactId = 'jconfiglib'
+        version = project.version.toString()
+        pom {
+            packaging = "jar"
+            properties['java.version'] = '17'
+
+            name.set('JConfigLib')
+            description.set('A Java library that syncs YAML config files with a Config class — auto-generates or updates as needed.')
+            url.set("https://github.com/domkss/JConfigLib")
+
+            licenses {
+                license {
+                    name.set("Mozilla Public License Version 2.0")
+                    url.set("https://www.mozilla.org/en-US/MPL/2.0/")
+                }
             }
+
+            developers {
+                developer {
+                    id.set("domkss")
+                    name.set("Dominik Kiss")
+                    email.set("dominik@domkss.dev")
+                }
+            }
+
+            scm {
+                connection.set("scm:git:git://github.com/domkss/JConfigLib.git")
+                developerConnection.set("scm:git:ssh://github.com:domkss/JConfigLib.git")
+                url.set("https://github.com/domkss/JConfigLib")
+            }
+
         }
     }
-    publications {
-        gpr(MavenPublication) {
-            artifact(tasks.named("shadowJar"))
-            groupId = project.group.toString()
-            artifactId = 'jconfiglib'
-            version = project.version.toString()
-            pom {
-                packaging = "jar"
-                properties['java.version'] = '17'
+    }
 
-                name.set('JConfigLib')
-                description.set('A Java library that syncs YAML config files with a Config class — auto-generates or updates as needed.')
-                url.set("https://github.com/domkss/JConfigLib")
+    repositories {
+        maven {
+            url = layout.buildDirectory.dir('staging-deploy')
+        }
+    }
+}
 
-                licenses {
-                    license {
-                        name.set("Mozilla Public License Version 2.0")
-                        url.set("https://www.mozilla.org/en-US/MPL/2.0/")
-                    }
+jreleaser {
+    release {
+        github {
+            repoOwner = 'domkss'
+            overwrite = true
+        }
+    }
+    signing {
+        active = 'ALWAYS'
+        armored = true
+    }
+    deploy {
+        maven {
+            mavenCentral {
+                sonatype {
+                    active = 'ALWAYS'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('build/staging-deploy')
                 }
-
-                developers {
-                    developer {
-                        id.set("domkss")
-                        name.set("Dominik Kiss")
-                        email.set("dominik@domkss.dev")
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/domkss/JConfigLib.git")
-                    developerConnection.set("scm:git:ssh://github.com:domkss/JConfigLib.git")
-                    url.set("https://github.com/domkss/JConfigLib")
-                }
-
             }
         }
     }

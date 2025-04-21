@@ -23,12 +23,13 @@ jobs:
       - name: Check for version bump
         id: version-check
         run: |
-          git fetch origin main --depth=2
-          git diff HEAD~1 HEAD build.gradle > version_diff.txt
-          echo "Has version changed:"
-          cat version_diff.txt
+          git fetch origin main --depth=1
+          VERSION_DIFF=$(git diff origin/main HEAD -- build.gradle)
           
-          if grep -q "version *= *" version_diff.txt; then
+          echo "Version diff output:"
+          echo "$VERSION_DIFF"
+          
+          if echo "$VERSION_DIFF" | grep -E '^[+-]\s*version\s*=\s*"\d+\.\d+\.\d+(-[a-zA-Z0-9\.]+)?"' > /dev/null; then
             echo "version_changed=true" >> $GITHUB_OUTPUT
           else
             echo "version_changed=false" >> $GITHUB_OUTPUT
@@ -42,10 +43,23 @@ jobs:
         if: steps.version-check.outputs.version_changed == 'true'
         run: chmod +x ./gradlew
 
-      - name: Publish package
+      - name: Check JReleaser config
+        if: steps.version-check.outputs.version_changed == 'true'
+        run: ./gradlew jreleaserConfig
+
+      - name: Stage Package
         if: steps.version-check.outputs.version_changed == 'true'
         run: ./gradlew publish
 
+      - name: Publish Package
+        if: steps.version-check.outputs.version_changed == 'true'
+        run: ./gradlew jreleaserFullRelease --dry-run
+
+
         env:
-          GithubPackagesRepository_User: ${{ secrets.GithubPackagesRepository_User }}
-          GithubPackagesRepository_Token: ${{ secrets.GithubPackagesRepository_Token }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
