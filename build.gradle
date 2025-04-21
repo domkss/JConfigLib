@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'dev.domkss'
-version = '1.1.0'
+version = '1.1.1'
 
 repositories {
     mavenCentral()
@@ -122,6 +122,7 @@ jreleaser {
                     active = 'ALWAYS'
                     url = 'https://central.sonatype.com/api/v1/publisher'
                     stagingRepository('build/staging-deploy')
+                    retryDelay = 20
                 }
             }
         }
