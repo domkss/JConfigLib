@@ -2,13 +2,21 @@ name: Publish Package
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   publish:
     name: Publish on version bump
     runs-on: ubuntu-latest
+
+    env:
+      JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+      JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
+      JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
+      JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+      JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+      JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
 
     steps:
       - name: Checkout repository
@@ -20,45 +28,15 @@ jobs:
           java-version: 23
           distribution: 'temurin'
 
-      - name: Check for version bump
-        id: version-check
-        run: |
-          git fetch origin main --depth=2
-          git diff HEAD~1 HEAD build.gradle > version_diff.txt
-          echo "Version diff:"
-          cat version_diff.txt
-          
-          if grep -E "^[+-].*version\s*=\s*['\"]\d+\.\d+\.\d+([-a-zA-Z0-9\.]*)?['\"]" version_diff.txt > /dev/null; then
-            echo "version_changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "version_changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Stop if version not bumped
-        if: steps.version-check.outputs.version_changed == 'false'
-        run: echo "Version not changed. Skipping publish."
 
       - name: Make Gradle wrapper executable
-        if: steps.version-check.outputs.version_changed == 'true'
         run: chmod +x ./gradlew
 
       - name: Check JReleaser config
-        if: steps.version-check.outputs.version_changed == 'true'
         run: ./gradlew jreleaserConfig
 
       - name: Stage Package
-        if: steps.version-check.outputs.version_changed == 'true'
         run: ./gradlew publish
 
       - name: Publish Package
-        if: steps.version-check.outputs.version_changed == 'true'
-        run: ./gradlew jreleaserFullRelease
-
-
-        env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
-          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
-          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
-          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
-          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
-          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+        run: ./gradlew jreleaserFullRelease --dry-run
