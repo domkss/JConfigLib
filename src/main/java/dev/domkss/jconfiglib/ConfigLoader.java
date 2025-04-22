@@ -27,6 +27,20 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Loads and manages YAML-based configuration files using annotated configuration classes.
+ * <p>
+ * This class is responsible for reading configuration data from a YAML file and populating the fields
+ * of a user-defined configuration class. If the configuration file exists at the specified path,
+ * it will be read and its values will be mapped to the corresponding fields. If the file does not exist,
+ * a new one will be created using the default values provided in the configuration class.
+ * <p>
+ * Example usage:
+ * <pre>{@code
+ * ConfigLoader loader = new ConfigLoader("path/to/config.yaml", logger);
+ * MyConfig config = loader.loadConfig(MyConfig.class);
+ * }</pre>
+ */
 public class ConfigLoader {
 
 
@@ -140,7 +154,10 @@ public class ConfigLoader {
                 }
             } else if (value instanceof List<?>) {
                 field.set(configInstance, castListToMatchType((List<?>) value, field));
-            } else {
+            }else if (value instanceof Map<?,?>) {
+                field.set(configInstance, castMapToMatchType((Map<?,?>) value, field));
+            }
+            else {
                 field.set(configInstance, value); // Strings, booleans, etc.
             }
 
@@ -293,17 +310,22 @@ public class ConfigLoader {
             Class<?> rawType = field.getType();
             if (Map.class.isAssignableFrom(rawType)) {
 
+                // Check the type of key elements in the map
+                Class<?> keyElementType = (Class<?>) pt.getActualTypeArguments()[0];
+                if(keyElementType != String.class){
+                    throw new IllegalArgumentException("Unsupported Map type");
+                }
+
                 // Check the type of the elements in the expected list
-                Class<?> elementType = (Class<?>) pt.getActualTypeArguments()[0];
+                Class<?> valueElementType = (Class<?>) pt.getActualTypeArguments()[1];
                 Map<Object, Object> resultMap = new HashMap<>();
 
                 for (Map.Entry<?, ?> entry : actualMap.entrySet()) {
                     Object actualKey = entry.getKey();
                     Object actualValue = entry.getValue();
 
-
                     if (actualValue instanceof Number) {
-                        switch (elementType.getName()) {
+                        switch (valueElementType.getName()) {
                             case "int", "java.lang.Integer" ->
                                     resultMap.put(actualKey, ((Number) actualValue).intValue());
                             case "float", "java.lang.Float" ->

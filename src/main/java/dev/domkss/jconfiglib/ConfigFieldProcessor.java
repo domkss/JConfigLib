@@ -18,6 +18,11 @@ import javax.tools.Diagnostic;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * INTERNAL USE ONLY.
+ * This class is used internally for annotation processing and should NOT be used or imported by user code.
+ * It's automatically triggered at compile time to validate annotations.
+ */
 @SupportedAnnotationTypes("dev.domkss.jconfiglib.ConfigField")
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class ConfigFieldProcessor extends AbstractProcessor {

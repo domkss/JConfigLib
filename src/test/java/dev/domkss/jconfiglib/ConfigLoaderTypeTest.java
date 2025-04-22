@@ -9,10 +9,7 @@
 
 package dev.domkss.jconfiglib;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -83,6 +80,8 @@ public class ConfigLoaderTypeTest {
         @ConfigField
         public Map<String, Double> doubleMap = Map.of("e", 2.71);
         @ConfigField
+        public Map<String, BigInteger> bigIntegerMap = Map.of("bI12", new BigInteger("476556789012345678901234567890"));
+        @ConfigField
         public Map<String, Boolean> boolMap = Map.of("yes", true, "no", false);
 
         @ConfigField
@@ -152,34 +151,8 @@ public class ConfigLoaderTypeTest {
             Object expected = expectedValues.get(field.getName());
             Object actual = field.get(conf);
 
-            // Special handling for lists
-            if (actual instanceof List<?>) {
-                List<?> expectedList = (List<?>) expected;
-                List<?> actualList = (List<?>) actual;
-
-                assertEquals(expectedList.size(), actualList.size(), "Size mismatch: " + field.getName());
-
-                for (int i = 0; i < actualList.size(); i++) {
-                    assertEquals(expectedList.get(i), actualList.get(i), "Mismatch at index " + i + " on field: " + field.getName());
-                }
-            }
-            // Special handling for maps
-            else if (actual instanceof Map<?, ?>) {
-                Map<?, ?> expectedMap = (Map<?, ?>) expected;
-                Map<?, ?> actualMap = (Map<?, ?>) actual;
-
-                assertEquals(expectedMap.size(), actualMap.size(), "Size mismatch: " + field.getName());
-
-                for (int i = 0; i < actualMap.size(); i++) {
-                    assertEquals(expectedMap.get(i), actualMap.get(i), "Mismatch at index " + i + " on field: " + field.getName());
-                }
-            }
             // Special handling for floating point numbers
-            else if (expected instanceof Float) {
-                assertEquals((Float) expected, (Float) actual, 0.0001, "Field mismatch: " + field.getName());
-            } else if (expected instanceof Double) {
-                assertEquals((Double) expected, (Double) actual, 0.0001, "Field mismatch: " + field.getName());
-            } else if (expected instanceof BigDecimal expectedBigDecimal) {
+            if (expected instanceof BigDecimal expectedBigDecimal) {
                 BigDecimal actualBigDecimal = (BigDecimal) actual;
                 BigDecimal difference = expectedBigDecimal.subtract(actualBigDecimal).abs();
                 assertTrue(difference.compareTo(BigDecimal.valueOf(0.0001)) <= 0,
