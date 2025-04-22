@@ -28,7 +28,7 @@ For Gradle:
 ```groovy
 dependencies {
     // Other Dependencies
-    implementation "dev.domkss:jconfiglib:1.1.2"
+    implementation "dev.domkss:jconfiglib:1.1.3"
 }
 ```
 For Maven:
@@ -38,7 +38,7 @@ For Maven:
         <dependency>
             <groupId>dev.domkss</groupId>
             <artifactId>jconfiglib</artifactId>
-            <version>1.1.2</version>
+            <version>1.1.3</version>
         </dependency>
     </dependencies>
 ```
