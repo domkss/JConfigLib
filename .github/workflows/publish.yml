@@ -9,6 +9,7 @@ jobs:
   publish:
     name: Publish on version bump
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     env:
       JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
@@ -40,3 +41,4 @@ jobs:
 
       - name: Publish Package
         run: ./gradlew jreleaserFullRelease
+        timeout-minutes: 30
