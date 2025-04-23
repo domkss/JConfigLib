@@ -30,9 +30,23 @@ java {
     }
 }
 
+tasks.named("sourcesJar") {
+    // Include LICENSE and COPYRIGHT in META-INF
+    into("META-INF") {
+        from("LICENSE")
+        from('COPYRIGHT')
+    }
+}
+
 shadowJar {
     configurations = [project.configurations.shadow]
-    archiveClassifier.set('')
+    archiveClassifier.set('') // ensures it's the main artifact
+
+    // Include LICENSE and COPYRIGHT in META-INF
+    into('META-INF') {
+        from('LICENSE')
+        from('COPYRIGHT')
+    }
 }
 
 tasks.named('build') {
