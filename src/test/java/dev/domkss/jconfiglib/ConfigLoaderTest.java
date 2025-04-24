@@ -13,7 +13,9 @@ package dev.domkss.jconfiglib;
 import org.junit.jupiter.api.*;
 import java.io.File;
 import java.nio.file.Files;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,24 +42,22 @@ public class ConfigLoaderTest {
         public boolean debug = true;
     }
 
-    @BeforeAll
-    static void muteLogger() {
-        LOGGER.setLevel(Level.OFF);
-    }
-
     @BeforeEach
     @AfterEach
     public void cleanUp() {
+        LOGGER.setLevel(Level.OFF);
+
         File file = new File(TEST_CONFIG_PATH);
         if (file.exists()) {
-            file.delete();
+           assertTrue(file.delete()," Failed to delete file:"+TEST_CONFIG_PATH);
         }
     }
+
 
     @Test
     @DisplayName("Creates config file if it doesn't exist using default field values")
     public void createsConfigFileIfMissing() throws Exception {
-        assertFalse(new File(TEST_CONFIG_PATH).exists());
+         assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
 
 
         //Create the file, check values and file existence
@@ -85,6 +85,7 @@ public class ConfigLoaderTest {
     @Test
     @DisplayName("Creates config file manually then reads its content to the config class")
     public void loadsConfigFromManualFile() throws Exception {
+        assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
         // Create config file manually
         String YAML = "name: newName\n#Ignored@#Comment\nport : 9876\ndebug: false\nPI : 4.121121\ne: 3.12";
         Files.writeString(new File(TEST_CONFIG_PATH).toPath(), YAML);
@@ -102,6 +103,8 @@ public class ConfigLoaderTest {
     @Test
     @DisplayName("Internal change of the config fields should not be saved to the config file")
     public void doesNotChangeFileIfUnchanged() throws Exception {
+         assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
+
         TestConfig original = new TestConfig();
         original.name = "unchanged";
         original.port = 5555;
@@ -127,6 +130,7 @@ public class ConfigLoaderTest {
     @Test
     @DisplayName("Checks if comments from the config class are preserved in the YAML config file")
     public void checkCommentAnnotationCorrectnessInYaml() throws Exception {
+         assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
 
         ConfigLoader configLoader = new ConfigLoader(TEST_CONFIG_PATH,LOGGER);
         TestConfig config = configLoader.loadConfig(TestConfig.class);
@@ -151,9 +155,12 @@ public class ConfigLoaderTest {
     @Test
     @DisplayName("Checks inline comments behaviour in the YAML config file")
     public void checkInlineCommentBehaviourInYaml() throws Exception {
+         assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
+
         // Create config file manually
         String YAML = "name: newName #Ignored@#Comment\nport : 9877";
         Files.writeString(new File(TEST_CONFIG_PATH).toPath(), YAML);
+
 
         File file = new File(TEST_CONFIG_PATH);
         assertTrue(file.exists(), "YAML file should be created when it doesn't exist");
@@ -164,7 +171,7 @@ public class ConfigLoaderTest {
 
         String yamlContent  = Files.readString(new File(TEST_CONFIG_PATH).toPath());
         // Check that a field-level inline comment (after the 'name' field) is preserved
-        assertFalse(yamlContent.contains("#Ignored@#Comment"),
+        assertFalse(yamlContent.contains("Ignored@#Comment"),
                 "Inline comment preservation is not supported");
 
         //The reading should be not affected
@@ -180,12 +187,14 @@ public class ConfigLoaderTest {
     @Test
     @DisplayName("Checks manual comment behaviour in the YAML config file")
     public void checkExternalCommentBehaviourInYaml() throws Exception {
+        assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
+
         // Create config file manually
         String YAML = "#Ignored@#Comment\nname: newName\nport : 9877";
         Files.writeString(new File(TEST_CONFIG_PATH).toPath(), YAML);
 
         File file = new File(TEST_CONFIG_PATH);
-        assertTrue(file.exists(), "YAML file should be created when it doesn't exist");
+        assertTrue(file.exists(), "YAML file should exist at this point");
 
         ConfigLoader configLoader = new ConfigLoader(TEST_CONFIG_PATH,LOGGER);
         TestConfig config = configLoader.loadConfig(TestConfig.class);
@@ -193,8 +202,8 @@ public class ConfigLoaderTest {
 
         String yamlContent  = Files.readString(new File(TEST_CONFIG_PATH).toPath());
         // Check that a field-level inline comment (after the 'name' field) is preserved
-        assertFalse(yamlContent.contains("#Ignored@#Comment"),
-                "Manual comment preservation is not supported");
+        assertTrue(yamlContent.contains("# Ignored@#Comment\n"),
+                "Manual comments should be preserved");
 
         //The reading should be not affected
         assertEquals("newName", config.name);
@@ -204,4 +213,114 @@ public class ConfigLoaderTest {
         assertTrue(config.debug);
 
     }
+
+
+    @Test
+    @DisplayName("Check content preservation of fields and comments unknown to the ConfigClass")
+    public void checkExternalFieldAndCommentPreservation() throws Exception {
+        assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
+
+        //Create the default config file
+        ConfigLoader configLoader = new ConfigLoader(TEST_CONFIG_PATH,LOGGER);
+        TestConfig config = configLoader.loadConfig(TestConfig.class);
+
+        File file = new File(TEST_CONFIG_PATH);
+        assertTrue(file.exists(), "YAML file should be created when it doesn't exist");
+
+
+        //Read and modify config file content
+        String fileContent  = Files.readString(new File(TEST_CONFIG_PATH).toPath());
+        fileContent=fileContent.replace("# Float value of E\ne: 2.7182817\ndebug: true","");
+
+        String extendedYamlString= fileContent + "\n#TestCommentForParam" +
+                "\nexternalVar: 14" +
+                "\notherField: 23.0" +
+                "\n#CommentNumber2" +
+                "\nlastUnknownField: Text\n"+
+                "# Float value of E\ne: 2.7182817\ndebug: true";
+        Files.writeString(new File(TEST_CONFIG_PATH).toPath(), extendedYamlString);
+
+
+        //Reload config class from the modified file and check content
+        TestConfig config_reload = configLoader.loadConfig(TestConfig.class);
+        assertEquals(config.name,config_reload.name);
+        assertEquals(config.PI,config_reload.PI);
+        assertEquals(config.debug,config_reload.debug);
+        assertEquals(config.e,config_reload.e);
+        assertEquals(config.port,config_reload.port);
+
+        //The reading should be not affected
+        assertEquals("defaultName", config_reload.name);
+        assertEquals(1234,config_reload.port);
+        assertEquals(Math.PI*-1, config_reload.PI);
+        assertEquals((float) Math.E, config_reload.e);
+        assertTrue(config_reload.debug);
+
+
+        String finalContent  = Files.readString(new File(TEST_CONFIG_PATH).toPath());
+        // Check if the external comment lines and key value pairs are preserved in the file
+        assertTrue(finalContent.contains("\n# TestCommentForParam\nexternalVar: 14\notherField: 23.0\n# CommentNumber2\nlastUnknownField: Text"),
+                "External comments and key value pairs should be reserved");
+
+    }
+
+    @Test
+    @DisplayName("Check invalid field data handling")
+    public void invalidFieldDataHandling() throws Exception {
+        assertFalse(new File(TEST_CONFIG_PATH).exists(),"Config file exists before the test");
+
+        Logger logger = Logger.getLogger(ConfigLoaderTest.class.getName());
+        TestLogHandler testHandler = new TestLogHandler();
+        logger.addHandler(testHandler);
+        logger.setUseParentHandlers(false);
+        logger.setLevel(Level.INFO);
+
+        //Create the file, check values and file existence
+        ConfigLoader configLoader = new ConfigLoader(TEST_CONFIG_PATH,logger);
+        TestConfig default_config = configLoader.loadConfig(TestConfig.class);
+        assertEquals(1234, default_config.port);
+        assertTrue(new File(TEST_CONFIG_PATH).exists());
+
+        String fileContent  = Files.readString(new File(TEST_CONFIG_PATH).toPath());
+        fileContent=fileContent.replace("1234","NotANumber");
+        Files.writeString(new File(TEST_CONFIG_PATH).toPath(), fileContent);
+
+        boolean exceptionThrown=false;
+        try {
+            TestConfig reloaded_config = configLoader.loadConfig(TestConfig.class);
+        }catch (ConfigLoader.InvalidConfigurationException e){
+            exceptionThrown=true;
+        }
+        assertTrue(exceptionThrown,"For invalid type the lib has to throw an exception");
+
+
+        boolean messageLogged = testHandler.getMessages().stream()
+                .anyMatch(msg -> msg.contains("Error setting field value for port"));
+
+        assertTrue(messageLogged, "Expected log message not found.");
+
+        //File content unchanged
+        String reloadedFileContent  = Files.readString(new File(TEST_CONFIG_PATH).toPath());
+        assertTrue(reloadedFileContent.contains("port: NotANumber"));
+
+
+    }
+
+    // Custom log handler to capture log records
+    static class TestLogHandler extends Handler {
+        private final java.util.List<String> messages = new java.util.ArrayList<>();
+
+        @Override
+        public void publish(LogRecord record) {
+            messages.add(record.getLevel() + ": " + record.getMessage());
+        }
+
+        @Override public void flush() {}
+        @Override public void close() throws SecurityException {}
+
+        public java.util.List<String> getMessages() {
+            return messages;
+        }
+    }
+
 }
