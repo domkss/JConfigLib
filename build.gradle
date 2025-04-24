@@ -119,12 +119,6 @@ publications {
 }
 
 jreleaser {
-    release {
-        github {
-            repoOwner = 'domkss'
-            overwrite = true
-        }
-    }
     signing {
         active = 'ALWAYS'
         armored = true
