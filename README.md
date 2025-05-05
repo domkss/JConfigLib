@@ -1,5 +1,7 @@
 # JConfigLib
 
+![Maven Central Version](https://img.shields.io/maven-central/v/dev.domkss/jconfiglib)
+
 **JConfigLib** is a lightweight Java library designed to simplify configuration management for Java applications. It allows you to:
 
 - Populate Java class fields from a YAML configuration file.
