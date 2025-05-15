@@ -30,7 +30,7 @@ For Gradle:
 ```groovy
 dependencies {
     // Other Dependencies
-    implementation "dev.domkss:jconfiglib:1.1.4"
+    implementation "dev.domkss:jconfiglib:1.1.5"
 }
 ```
 For Maven:
@@ -40,7 +40,7 @@ For Maven:
         <dependency>
             <groupId>dev.domkss</groupId>
             <artifactId>jconfiglib</artifactId>
-            <version>1.1.4</version>
+            <version>1.1.5</version>
         </dependency>
     </dependencies>
 ```
@@ -83,6 +83,10 @@ try {
     // If the file already exists serverConfig fields are now populated from the YAML file
     // If the file on CONFIG_FILE_PATH doesn't exist this function call 
     // will try to create it with default values defined in the ServerConfig.class
+    serverConfig.setPort(430);
+    // Update config file content
+    configLoader.saveConfig(serverConfig);
+    
 } catch (Exception e) {
     LOGGER.info("Failed to load config: " + e.toString());
 }

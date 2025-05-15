@@ -65,11 +65,13 @@ public class ConfigLoader {
             throw new RuntimeException(e);
         }
 
+        Map<String, Object> defaultConfig = getFieldValues(configInstance);
+
         File configFile = new File(FILE_PATH);
 
         if (!configFile.exists()) {
             LOGGER.info("Config file does not exist. Creating with default values.");
-            saveDefaultConfig(configInstance);
+            saveConfig(defaultConfig);
         } else {
             try {
                 String fileContent = Files.readString(configFile.toPath(), StandardCharsets.UTF_8);
@@ -95,26 +97,75 @@ public class ConfigLoader {
 
                 if (data.isEmpty()) {
                     LOGGER.info("Config file is empty or corrupt. Creating with default values.");
-                    saveDefaultConfig(configInstance);
+                    saveConfig(defaultConfig);
                 } else {
                     // Process the configuration file
                     updateConfigFromFile(configInstance, data);
                 }
             } catch (IOException e) {
                 LOGGER.info("Error reading config file, creating a new one with default values.");
-                saveDefaultConfig(configInstance);
+                saveConfig(defaultConfig);
             }
         }
 
         return configInstance;
     }
 
+    //Save current config field values to the YAML file
+    public <T> void saveConfig(T configInstance) {
+        Map<String, Object> currentConfig = getFieldValues(configInstance);
+        File configFile = new File(FILE_PATH);
+
+        if (!configFile.exists()) {
+            LOGGER.info("Config file does not exist. Creating with current config values.");
+            saveConfig(currentConfig);
+        } else {
+            try {
+                String fileContent = Files.readString(configFile.toPath(), StandardCharsets.UTF_8);
+
+                Yaml yaml = new Yaml();
+                LinkedHashMap<String, Object> yamlData = yaml.load(new StringReader(fileContent));
+
+                LinkedHashMap<String, String> comments = extractYamlCommentsFromConfigFile(new StringReader(fileContent));
+
+                LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+
+                for (Map.Entry<String, Object> entry : yamlData.entrySet()) {
+                    String key = entry.getKey();
+                    Object value = entry.getValue();
+
+                    String commentKey = "#" + key;
+                    if (comments.containsKey(commentKey)) {
+                        data.put(commentKey, comments.get(commentKey)); // Insert comment
+                    }
+
+                    data.put(key, value); // Insert actual key pair
+                }
+
+                if (data.isEmpty()) {
+                    LOGGER.info("Config file is empty or corrupt. Creating with current config values.");
+                    saveConfig(currentConfig);
+                } else {
+                    // Update data map with current field values
+                    data.putAll(currentConfig);
+                    saveConfig(data); // Save the updated file content
+                }
+            } catch (IOException e) {
+                LOGGER.info("Error reading config file, creating a new one with current config values.");
+                saveConfig(currentConfig);
+            }
+
+        }
+
+    }
+
+
     // Automatically update configuration variables from the YAML file data
     private <T> void updateConfigFromFile(T configInstance, Map<String, Object> fileConfigMap) throws InvalidConfigurationException {
-        Map<String, Object> defaultConfigMap = getDefaultValues(configInstance);
+        Map<String, Object> defaultConfigMap = getFieldValues(configInstance);
         Map<String, Object> updatedConfigMap = new LinkedHashMap<>();
 
-        for(Map.Entry<String, Object> entry : fileConfigMap.entrySet()){
+        for (Map.Entry<String, Object> entry : fileConfigMap.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
 
@@ -131,7 +182,7 @@ public class ConfigLoader {
             Object defaultValue = entry.getValue();
 
             //If the file already contains the key do nothing
-            if(updatedConfigMap.containsKey(key)) continue;
+            if (updatedConfigMap.containsKey(key)) continue;
 
             //Add the key pair if it is not already included in the file
             updatedConfigMap.put(key, defaultValue);
@@ -179,10 +230,9 @@ public class ConfigLoader {
                 }
             } else if (value instanceof List<?>) {
                 field.set(configInstance, castListToMatchType((List<?>) value, field));
-            }else if (value instanceof Map<?,?>) {
-                field.set(configInstance, castMapToMatchType((Map<?,?>) value, field));
-            }
-            else {
+            } else if (value instanceof Map<?, ?>) {
+                field.set(configInstance, castMapToMatchType((Map<?, ?>) value, field));
+            } else {
                 field.set(configInstance, value); // Strings, booleans, etc.
             }
 
@@ -194,7 +244,7 @@ public class ConfigLoader {
 
 
     // Get default values for all fields annotated with @Config
-    private <T> Map<String, Object> getDefaultValues(T configInstance) {
+    private <T> Map<String, Object> getFieldValues(T configInstance) {
         Map<String, Object> defaultValues = new LinkedHashMap<>();
         try {
             // Loop through all fields in the class
@@ -215,6 +265,7 @@ public class ConfigLoader {
         }
         return defaultValues;
     }
+
 
     // Save the configuration (either updated or default) to the YAML file
     private void saveConfig(Map<String, Object> updatedConfig) {
@@ -240,7 +291,7 @@ public class ConfigLoader {
         Yaml yaml = new Yaml(options);
 
 
-        try{
+        try {
             //Dump the comment free config to a YAML string
             String rawYaml = yaml.dump(cleanedConfig);
             StringBuilder finalYaml = new StringBuilder();
@@ -265,11 +316,6 @@ public class ConfigLoader {
 
     }
 
-    // Save the default configuration to the YAML file
-    private <T> void saveDefaultConfig(T configInstance) {
-        Map<String, Object> defaultConfig = getDefaultValues(configInstance);
-        saveConfig(defaultConfig);
-    }
 
     private LinkedHashMap<String, String> extractYamlCommentsFromConfigFile(Reader reader) throws IOException {
         LinkedHashMap<String, String> comments = new LinkedHashMap<>();
@@ -372,7 +418,7 @@ public class ConfigLoader {
 
                 // Check the type of key elements in the map
                 Class<?> keyElementType = (Class<?>) pt.getActualTypeArguments()[0];
-                if(keyElementType != String.class){
+                if (keyElementType != String.class) {
                     throw new IllegalArgumentException("Unsupported Map type");
                 }
 
